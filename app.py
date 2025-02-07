@@ -74,10 +74,10 @@ def coretime_prometheus(endpoint: str, task: int):
     price = renew_info['price']
 
     return '\n'.join([
-        f'renew_at{{task={task}}} {renew_at:.0f}',
-        f'renew_until{{task={task}}} {renew_until:.0f}',
-        f'price{{task={task}}} {price}',
-        f'core{{task={task}}} {core}',
+        f'renew_at{{task="{task}"}} {renew_at:.0f}',
+        f'renew_until{{task="{task}"}} {renew_until:.0f}',
+        f'price{{task="{task}"}} {price}',
+        f'core{{task="{task}"}} {core}',
     ])
 
 def calculate_renew_dates(sub: SubstrateInterface, when: int, block_hash: str):
