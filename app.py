@@ -41,44 +41,43 @@ def main(host: str, port: int, endpoint: str, task: int):
         serve(app, host=host, port=port)
 
 def coretime_prometheus(endpoint: str, task: int):
-    sub = SubstrateInterface(url=endpoint)
+    with SubstrateInterface(url=endpoint) as sub:
+        block_number = sub.query('System', 'Number').value
+        previous_block_number = block_number - 1
 
-    block_number = sub.query('System', 'Number').value
-    previous_block_number = block_number - 1
+        block_hash = sub.query('System', 'BlockHash', [previous_block_number]).value
 
-    block_hash = sub.query('System', 'BlockHash', [previous_block_number]).value
+        workload = sub.query_map('Broker', 'Workload', block_hash=block_hash)
+        core = next(
+            core.value
+            for core, core_workload in workload
+            if core_workload[0]['assignment'][1] == task
+        )
 
-    workload = sub.query_map('Broker', 'Workload', block_hash=block_hash)
-    core = next(
-        core.value
-        for core, core_workload in workload
-        if core_workload[0]['assignment'][1] == task
-    )
+        if not core:
+            raise f'Task {task} not found!'
 
-    if not core:
-        raise f'Task {task} not found!'
+        potential_renewals = sub.query_map('Broker', 'PotentialRenewals', block_hash=block_hash)
+        renew_info = next(
+            {'when': key['when'].value, 'price': value['price'].value}
+            for key, value in potential_renewals
+            if value['completion'][1][0]['assignment'][1].value == task
+        )
+        
+        if not renew_info:
+            raise f'Renew info for task {task} not found!'
 
-    potential_renewals = sub.query_map('Broker', 'PotentialRenewals', block_hash=block_hash)
-    renew_info = next(
-        {'when': key['when'].value, 'price': value['price'].value}
-        for key, value in potential_renewals
-        if value['completion'][1][0]['assignment'][1].value == task
-    )
-    
-    if not renew_info:
-        raise f'Renew info for task {task} not found!'
+        when = calculate_renew_dates(sub, renew_info['when'], block_hash)
+        renew_at = when['at'].timestamp()
+        renew_until = when['until'].timestamp()
+        price = renew_info['price']
 
-    when = calculate_renew_dates(sub, renew_info['when'], block_hash)
-    renew_at = when['at'].timestamp()
-    renew_until = when['until'].timestamp()
-    price = renew_info['price']
-
-    return '\n'.join([
-        f'renew_at{{task="{task}"}} {renew_at:.0f}',
-        f'renew_until{{task="{task}"}} {renew_until:.0f}',
-        f'price{{task="{task}"}} {price}',
-        f'core{{task="{task}"}} {core}',
-    ])
+        return '\n'.join([
+            f'renew_at{{task="{task}"}} {renew_at:.0f}',
+            f'renew_until{{task="{task}"}} {renew_until:.0f}',
+            f'price{{task="{task}"}} {price}',
+            f'core{{task="{task}"}} {core}',
+        ])
 
 def calculate_renew_dates(sub: SubstrateInterface, when: int, block_hash: str):
     config = sub.query('Broker', 'Configuration', block_hash=block_hash).value
