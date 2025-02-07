@@ -30,10 +30,10 @@ Each metric has a label `task`, which is the parachain ID to which the values pe
 Example:
 
 ```prometheus
-renew_at{task=2095} 1740798352
-renew_until{task=2095} 1741100752
-price{task=2095} 791756500
-core{task=2095} 27
+renew_at{task="2095"} 1740798352
+renew_until{task="2095"} 1741100752
+price{task="2095"} 791756500
+core{task="2095"} 27
 ```
 
 P.S. The renew time may fluctuate by several dozen seconds; 100% accuracy is not guaranteed
