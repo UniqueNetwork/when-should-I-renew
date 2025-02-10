@@ -36,8 +36,6 @@ price{task="2095"} 791756500
 core{task="2095"} 27
 ```
 
-P.S. The renew time may fluctuate by several dozen seconds; 100% accuracy is not guaranteed
-
 ## License
 
 The project is licensed under the [MIT License](license)
