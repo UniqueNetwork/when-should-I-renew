@@ -1,0 +1,9 @@
+services:
+  renew-chain:
+    build:.
+      dockerfile: Dockerfile
+      context: .
+    container_name: renew-chain
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8087:43987
